@@ -1823,7 +1823,7 @@ function App() {
             <input onChange={handleOnChange} type="text" />
             <br />
             <input onChange={handleOnChange} type="text" />
-            {/* giao diện bên ngoài bị thay đổi khi thay dữ liệu trong component*/}
+            {/* giao diện bên ngoài không bị thay đổi khi thay dữ liệu trong component*/}
             <button onClick={handleOnSubmit}>Change</button>
         </div>
     );
@@ -2007,6 +2007,11 @@ export default App;
   onChange={handleOnChange}
   => Hàm được gọi khi sự kiện onChange được thực thi
 ```
+
+=> Nói tóm lại, khi ta sửa dữ liệu bên trên giao diện mà dữ liệu trong component(state) thay đổi </br>
+theo thì đây được gọi là one way binding, Còn nếu ta thay đổi dữ liệu trên giao diện => Dữ liệu </br>
+trong component thay đổi và khi sửa dữ liệu trong component => Giao diện thay đổi thì đây gọi là </br>
+two way binding
 
 -   Xây dựng app todolist
 
@@ -3870,7 +3875,7 @@ export const useStore = () => {
     // Hoặc có thể return useContext(Context) luôn, nhưng không nên làm kiểu thế, trình bày như này cho clean, dễ hiểu
 }
 
-// src/ index.js
+// src/store/ index.js
 export { default as StoreProvider } from './Provider'
 export { default as StoreContext } from './Context'
 export * from './hooks'
@@ -3966,6 +3971,90 @@ function reducer(state, action) {
 }
 export default reducer
 export { initState }
+
+// App.js
+import { useRef } from "react";
+import { useStore, actions } from "./store";
+import "./App.css";
+function App() {
+  const inputElm = useRef();
+  const [state, dispatch] = useStore();
+  const { toDos, toDoInput, textBtn, currentIndex } = state;
+  const handleAdd = () => {
+    if (textBtn === "Add") {
+      dispatch(actions.addToDo(toDoInput));
+      inputElm.current.focus();
+      dispatch(actions.setTodoInput(""));
+    }
+    if (textBtn === "Done") {
+      dispatch(actions.editToDo(currentIndex));
+      dispatch(actions.setTodoInput(""));
+      dispatch(actions.setTextBtn("Add"));
+    }
+  };
+  const handleRemoveTodo = (index) => {
+    if (window.confirm("Are you sure to remove this todo?"))
+      dispatch(actions.removeToDo(index));
+  };
+  const handleEditToDo = (index) => {
+    const toDoIsEdited = toDos[index];
+    dispatch(actions.setTodoInput(toDoIsEdited));
+    dispatch(actions.setTextBtn("Done"));
+    dispatch(actions.setCurrentIndex(index));
+  };
+  return (
+    <div className="center">
+      <h1>Ní Hảo, Hủa Ai Nỉ F8</h1>
+      <input
+        ref={inputElm}
+        type="text"
+        value={toDoInput}
+        placeholder="enter todo"
+        onChange={(e) => {
+          dispatch(actions.setTodoInput(e.target.value));
+        }}
+      />
+      <button style={{ cursor: "pointer" }} onClick={handleAdd}>
+        {textBtn}
+      </button>
+      <ul style={{ listStyle: "none" }}>
+        {toDos.map((toDo, index) => (
+          <li key={index}>
+            {toDo}
+            <span
+              onClick={() => handleRemoveTodo(index)}
+              style={{ cursor: "pointer", margin: "0 12px", lineHeight: "3" }}
+            >
+              &times;
+            </span>
+            <button
+              onClick={() => handleEditToDo(index)}
+              style={{ cursor: "pointer" }}
+            >
+              Edit
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+export default App;
+
+// src/index.js
+import ReactDOM from "react-dom";
+
+import App from "./App";
+import { StoreProvider } from "./store";
+
+const rootElement = document.getElementById("root");
+ReactDOM.render(
+  <StoreProvider>
+    <App />
+  </StoreProvider>,
+  rootElement
+);
+
 ```
 
 <span style="color: yellow">**useImperative Handle hook**</span>
