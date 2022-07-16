@@ -2453,7 +2453,7 @@ export default Hello;
 
 -   useEffect with timer functions
 
-    -   Nếu ta code theo kiểu dưới đây thì trong hàm setInterval giá trị của time luôn luôn là 180 do bản chất thằng useEffect với mảng rỗng chỉ chạy một lần => Lúc này trong phạm vi của hàm useEffect chúng ta sẽ có một biến time có giá trị là 180 là biến time trong setInterval tham chiếu tới biến time trên useEffect (closure)
+    -   Nếu ta code theo kiểu dưới đây thì trong hàm setInterval giá trị của time luôn luôn là 179(UI) do bản chất thằng useEffect với mảng rỗng chỉ chạy một lần => Lúc này trong phạm vi của hàm useEffect chúng ta sẽ có một biến time có giá trị là 180 là biến time trong setInterval tham chiếu tới biến time trên useEffect (closure)
 
 ```jsx
 import React, { useState } from 'react';
@@ -2513,7 +2513,8 @@ function FileImage(props) {
       // xóa object url khỏi bộ nhớ
       // nếu chỉ dùng URL.revokeObjectURL(avatar.preview);
       // thì sẽ gặp lỗi do khi mới bắt đầu chọn file (lúc này sẽ lọt vào handlePreviewAvata do change file)
-      // khi này thì avatar sẽ thay đổi và hàm cleanup được gọi nhưng avatar là underfined => cần check như dưới đây
+      // khi này thì avatar sẽ thay đổi và hàm cleanup được gọi nhưng avatar là undefined (do nó gọi clearn up trước)
+      // => cần check như dưới đây
       avatar && URL.revokeObjectURL(avatar.preview);
     };
   }, [avatar]);
@@ -2521,7 +2522,8 @@ function FileImage(props) {
     const file = e.target.files[0];
     file.preview = URL.createObjectURL(file);
     setAvatar(file);
-    // fix trường hợp chọn nhiều file giống nhau ( Lúc này cần set value của ô input thành null để nó vẫn lắng nghe được sự kiện onChange từ input)
+    // fix trường hợp chọn 2 lần 2 file giống nhau ( Lúc này cần set value của ô input thành null để nó vẫn lắng nghe
+    //được sự kiện onChange(Để cập nhật lại UI) từ input)
     e.target.value = null;
   };
   return (
@@ -2555,6 +2557,37 @@ function App(props) {
 
 export default App;
 
+```
+
+-   Qua đoạn code dưới đây ta sẽ hiểu, count trong clean up sẽ có giá trị chậm 1 nhịp so với count trong callback
+
+=> Lý do: Sau khi nhận thấy có dự thay đổi count khi click vào "Click me" (Tắng 1 giá trị), Lúc này giao diện </br>
+sẽ được render ra trước, sau đó mới đến useEffect, tuy nhiên clean up được gọi trước khi cập nhật cái giá trị </br>
+trong callback nên giá trị sẽ chậm hơn một nhịp
+
+```js
+import { useEffect, useState } from 'react';
+import './App.css';
+
+function App() {
+    const [count, setCount] = useState(0);
+
+    useEffect(() => {
+        console.log('Count in callback ', count);
+        return () => {
+            // clean up
+            console.log('Count in Clean up ', count);
+        };
+    }, [count]);
+
+    return (
+        <div onClick={() => setCount(count + 1)} className="App">
+            Click me
+        </div>
+    );
+}
+
+export default App;
 ```
 
 -   useEffect with fake chat app
@@ -2794,7 +2827,7 @@ export default App;
 -   Thế nhưng mọi chuyện không như ta nghĩ:
     -   Vấn đề: Khi bấm start thì nó có chạy từ số 60 lùi về sau, thế nhưng khi ta bấm end thì nó sẽ không kết thúc
         -   Tuy nhiên khi số 60 hiện ra, ta nhanh tay bấm end (khi nó vẫn là 60 mà chưa bị giảm giá trị) thì nó sẽ clear được interval
-        -   Phải đợi số 60 bị lùi về 1 vài đơn vị thì khi bấm end nó mới KHÔNG dừng lại
+        -   Phải đợi số 60 bị lùi về 1 đơn vị thì khi bấm end nó mới KHÔNG dừng lại
     -   Nguyên nhân: khi component được render lần đầu tiên thì biến timeId được tạo ra, lúc này những biến timeId thứ hai trở đi sẽ được tham chiếu tới timeId đầu, tuy nhiên sau khi giá trị nó giảm đi thì component được thay đổi state và render lại và tạo ra một timeId mới (undefinded) => nó không thể clear time interval
         (Liên quan tới phạm vi, vì khi component được render lại thì nó sẽ tạo ra một phạm vi mới. Mỗi hàm được tạo nó sẽ không liên quan gì đến phạm vi trước đó) => Chúng ta có thể fix bằng cách đưa biến timeId ra ngoài phạm vi của App thì sẽ được kết quả như mong đợi, tuy nhiên thì không nên làm như thế :v
 -   Ta sẽ sử dụng useRef để fixx vấn đề trên
@@ -2886,7 +2919,7 @@ function App(props) {
 export default App;
 ```
 
-<span style="color: red">**Phương thức của thư viện react useMemo() Higher Order component (HOC)**</span>
+<span style="color: red">**Phương thức của thư viện React.memo() Higher Order component (HOC)**</span>
 
 -   Giúp tối ưu hiệu năng, giúp xử lí một component tránh re-render ở những tình huống không cần thiết
 -   Chúng ta cùng xem tình huống sau:
@@ -3051,7 +3084,7 @@ export default App;
 
 => Hãy xác định nếu sử dụng memo thì những props function chúng ta phải sử dụng useCallback hết
 
--   Nếu không sử dụng memo thì không được dừng useCallback làm gì :>, bởi vì nếu không có memo thì lúc nào thằng cha re-render thì thằng con cũng re-render
+-   Nếu không sử dụng memo thì không được dùng useCallback làm gì :>, bởi vì nếu không có memo thì lúc nào thằng cha re-render thì thằng con cũng re-render
 -   function component + memo giống như pure component trong class component
 
 <span style="color: red">**useMemo hook**</span>
