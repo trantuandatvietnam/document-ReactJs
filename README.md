@@ -84,6 +84,9 @@
     -   Context Api
         -   Vấn đề khi truyền Props nhiều cấp
         -   Sử dụng Context API
+    
+    - Một số thư viện ReactJs animation
+    	- https://www.framer.com/docs/introduction/ 
 
 <span style="color:yellow">**SPA**</span>
 
